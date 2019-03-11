@@ -1,4 +1,3 @@
 rootProject.name = 'segfault-university'
 
-include 'parser',
-        'legacy'
+include 'legacy'
