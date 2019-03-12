@@ -1,3 +1,4 @@
 rootProject.name = 'segfault-university'
 
-include 'legacy'
+include 'legacy',
+        'beer-case'
