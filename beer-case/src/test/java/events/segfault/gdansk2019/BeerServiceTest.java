@@ -33,8 +33,6 @@ public class BeerServiceTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
     @Mock
-    private Function<String, Boolean> isAdult;
-    @Mock
     private BiFunction<Beer, Integer, Money> discountCalculator;
     @Mock
     private CustomerService customerService;
