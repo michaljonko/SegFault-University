@@ -28,19 +28,38 @@ class BeerServiceSpec extends Specification {
     @Unroll
     def 'if customr is born at #customer.birthDate then sell = #expectedResult'() {
         given:
-        def discount = Money.of(EUR, discountValue)
+        def discount = Money.of(EUR, 0)
         discountCalculator.apply(beer, 1) >> discount
-        customerService.getCustomerById("777") >> adultCustomer
+        customerService.getCustomerById("777") >> customer
 
         when:
         def result = beerService.buyBeers("777", beer, 1)
 
         then:
-        result == true;
+        result == expectedResult
 
         where:
-        customer      | discountValue || expectedResult
-        adultCustomer | 0             || true
-        childCustomer | 0             || false
+        customer      || expectedResult
+        adultCustomer || true
+        childCustomer || false
+    }
+
+    @Unroll
+    def 'when discount is #discountValue then total price should be = #expectedTotalPrice'() {
+        given:
+        def discount = Money.of(EUR, discountValue)
+        discountCalculator.apply(beer, 1) >> discount
+        customerService.getCustomerById("777") >> adultCustomer
+
+        when:
+        beerService.buyBeers("777", beer, 1)
+
+        then:
+        1 * customerService.buy(adultCustomer, Money.of(EUR, expectedTotalPrice))
+
+        where:
+        discountValue || expectedTotalPrice
+        0             || 10
+        3             || 7
     }
 }

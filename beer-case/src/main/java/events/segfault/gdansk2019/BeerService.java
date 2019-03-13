@@ -47,7 +47,7 @@ public final class BeerService {
             customerService.buy(customer, totalPrice);
             return true;
         } else {
-            throw new NotAdultException();
+            return false;
         }
     }
 
