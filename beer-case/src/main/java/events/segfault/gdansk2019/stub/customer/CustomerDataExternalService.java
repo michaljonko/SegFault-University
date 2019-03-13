@@ -1,7 +1,5 @@
 package events.segfault.gdansk2019.stub.customer;
 
-import events.segfault.gdansk2019.stub.Beer;
-
 import java.time.Instant;
 
 public final class CustomerDataExternalService implements CustomerService {
@@ -20,7 +18,7 @@ public final class CustomerDataExternalService implements CustomerService {
     }
 
     @Override
-    public void buy(Customer customer, Beer beer, double totalPrice) {
+    public void buy(Customer customer, double totalPrice) {
         if (customer.getFullName().startsWith("P")) {
             throw new CustomerServiceException();
         }
