@@ -1,22 +1,28 @@
 package events.segfault.gdansk2019.stub;
 
-import lombok.NonNull;
+import events.segfault.gdansk2019.stub.price.DiscountService;
+import io.vavr.CheckedFunction2;
+import io.vavr.Function2;
+import io.vavr.control.Try;
+import lombok.AllArgsConstructor;
 import org.joda.money.Money;
 
-import java.util.function.BiFunction;
+@AllArgsConstructor
+public final class TotalPriceCalculator implements Function2<Beer, Integer, Money> {
 
-public final class TotalPriceCalculator implements BiFunction<Beer, Integer, Money> {
+    private final CheckedFunction2<Beer, Integer, Money> calculateDiscount;
 
-    private final BiFunction<Beer, Integer, Money> discountCalculator;
-
-    public TotalPriceCalculator(@NonNull BiFunction<Beer, Integer, Money> discountCalculator) {
-        this.discountCalculator = discountCalculator;
+    public TotalPriceCalculator() {
+        this(DiscountService::calculateDiscount);
     }
 
     @Override
     public Money apply(Beer beer, Integer amount) {
         Money totalPrice = beer.getPrice().multipliedBy(amount);
-        Money discount = discountCalculator.apply(beer, amount);
-        return totalPrice.minus(discount);
+        return Try.of(() -> calculateDiscount.apply(beer, amount))
+                .map(totalPrice::minus)
+                .getOrElse(totalPrice);
     }
 }
+
+

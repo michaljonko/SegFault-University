@@ -2,31 +2,36 @@ package events.segfault.gdansk2019.stub;
 
 import events.segfault.gdansk2019.stub.customer.Customer;
 import events.segfault.gdansk2019.stub.customer.CustomerService;
-import lombok.NonNull;
+import io.vavr.Function1;
+import io.vavr.control.Either;
+import io.vavr.control.Try;
+import lombok.AllArgsConstructor;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.NoSuchElementException;
 
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
+import static io.vavr.Predicates.instanceOf;
 import static java.time.ZoneOffset.UTC;
 
-public final class AdultCustomerService implements Function<String, Optional<Customer>> {
+@AllArgsConstructor
+public final class AdultCustomerService implements Function1<String, Either<Throwable, Customer>> {
 
-    private final Clock clock;
-    private final CustomerService customerService;
-
-    public AdultCustomerService(@NonNull Clock clock, @NonNull CustomerService customerService) {
-        this.clock = clock;
-        this.customerService = customerService;
-    }
+    private final transient Clock clock;
+    private final transient CustomerService customerService;
 
     @Override
-    public Optional<Customer> apply(String customerId) {
-        Customer customer = customerService.getCustomerById(customerId);
-        if (customer.getBirthDate().isBefore(LocalDateTime.now(clock).minusYears(18).toInstant(UTC))) {
-            return Optional.of(customer);
-        }
-        return Optional.empty();
+    public Either<Throwable, Customer> apply(String customerId) {
+        return Try.of(() -> customerService.getCustomerById(customerId))
+                .filter(this::isAdult)
+                .mapFailure(
+                        Case($(instanceOf(NoSuchElementException.class)), NotAdultException::new))
+                .toEither();
+    }
+
+    private boolean isAdult(Customer customer) {
+        return customer.getBirthDate().isBefore(LocalDateTime.now(clock).minusYears(18).toInstant(UTC));
     }
 }

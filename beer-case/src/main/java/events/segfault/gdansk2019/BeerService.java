@@ -1,35 +1,33 @@
 package events.segfault.gdansk2019;
 
-import events.segfault.gdansk2019.stub.*;
+import events.segfault.gdansk2019.stub.AdultCustomerService;
+import events.segfault.gdansk2019.stub.Beer;
+import events.segfault.gdansk2019.stub.BuyBeer;
+import events.segfault.gdansk2019.stub.TotalPriceCalculator;
 import events.segfault.gdansk2019.stub.customer.Customer;
 import events.segfault.gdansk2019.stub.customer.CustomerService;
+import io.vavr.Function1;
+import io.vavr.Function2;
+import io.vavr.control.Either;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.money.Money;
 
 import java.time.Clock;
-import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 @Slf4j
+@AllArgsConstructor(access = AccessLevel.PACKAGE)
 public final class BeerService {
 
-    private final Function<String, Optional<Customer>> adultCustomerService;
-    private final BiFunction<Beer, Integer, Money> priceCalculator;
-    private final BiFunction<Customer, Money, Boolean> buyBeerFunction;
+    private final Function1<String, Either<Throwable, Customer>> customerService;
+    private final Function2<Beer, Integer, Money> totalPriceCalculator;
+    private final Function2<Customer, Money, Either<Throwable, Money>> buyBeer;
 
     public BeerService(CustomerService customerService) {
         this(new AdultCustomerService(Clock.systemUTC(), customerService),
-                new TotalPriceCalculator(new DiscountCalculator()),
+                new TotalPriceCalculator(),
                 new BuyBeer(customerService));
-    }
-
-    BeerService(Function<String, Optional<Customer>> adultCustomerService,
-                BiFunction<Beer, Integer, Money> priceCalculator,
-                BiFunction<Customer, Money, Boolean> buyBeerFunction) {
-        this.adultCustomerService = adultCustomerService;
-        this.priceCalculator = priceCalculator;
-        this.buyBeerFunction = buyBeerFunction;
     }
 
     /**
@@ -38,12 +36,9 @@ public final class BeerService {
      * - check & calculate discount for final price
      * - calculate final price & charge the customer
      */
-    public boolean buyBeers(String customerId, Beer beer, int amount) {
-        return adultCustomerService.apply(customerId)
-                .map(customer -> {
-                    Money finalPrice = priceCalculator.apply(beer, amount);
-                    return buyBeerFunction.apply(customer, finalPrice);
-                })
-                .orElseThrow(NotAdultException::new);
+    public Either<Throwable, Money> buyBeers(String customerId, Beer beer, int amount) {
+        return customerService.apply(customerId)
+                .map(buyBeer::apply)
+                .flatMap(chargeFunction -> chargeFunction.apply(totalPriceCalculator.apply(beer, amount)));
     }
 }

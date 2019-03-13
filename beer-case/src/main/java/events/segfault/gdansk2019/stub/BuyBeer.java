@@ -2,26 +2,21 @@ package events.segfault.gdansk2019.stub;
 
 import events.segfault.gdansk2019.stub.customer.Customer;
 import events.segfault.gdansk2019.stub.customer.CustomerService;
-import lombok.NonNull;
+import io.vavr.Function2;
+import io.vavr.control.Either;
+import io.vavr.control.Try;
+import lombok.AllArgsConstructor;
 import org.joda.money.Money;
 
-import java.util.function.BiFunction;
+@AllArgsConstructor
+public final class BuyBeer implements Function2<Customer, Money, Either<Throwable, Money>> {
 
-public final class BuyBeer implements BiFunction<Customer, Money, Boolean> {
-
-    private final CustomerService customerService;
-
-    public BuyBeer(@NonNull CustomerService customerService) {
-        this.customerService = customerService;
-    }
+    private final transient CustomerService customerService;
 
     @Override
-    public Boolean apply(Customer customer, Money money) {
-        try {
-            customerService.buy(customer, money.getAmount().doubleValue());
-            return true;
-        } catch (Throwable e) {
-            return false;
-        }
+    public Either<Throwable, Money> apply(Customer customer, Money money) {
+        return Try.run(() -> customerService.buy(customer, money.getAmount().doubleValue()))
+                .map(ignored -> money)
+                .toEither();
     }
 }
